@@ -68,9 +68,17 @@ class FeedViewModel @Inject constructor(
 
     // The reactive Room-backed flow that loadFeed() already collects pushes the refreshed data
     // through automatically once the repository sync completes — this just triggers that sync.
+    // refreshFeedUseCase() rethrows on failure (PostRepositoryImpl.refreshFeed() needs to, so
+    // CacheSyncWorker can see it for retry) — a manual pull-to-refresh tap has to swallow that
+    // itself, or a transient network failure here would crash the app instead of just leaving
+    // the already-visible cached list on screen.
     private fun refresh() {
         viewModelScope.launch {
-            refreshFeedUseCase()
+            try {
+                refreshFeedUseCase()
+            } catch (e: Exception) {
+                // Cached data is still showing via loadFeed()'s ongoing collection; nothing to do.
+            }
         }
     }
 

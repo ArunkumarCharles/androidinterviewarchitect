@@ -66,14 +66,21 @@ fun FeedContent(
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
                 is FeedUiState.Success -> {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(state.posts, key = { it.id }) { post ->
-                            PostItem(
-                                post = post,
-                                onLikeClick = {
-                                    onIntent(FeedIntent.ToggleLike(post.id, post.isLiked))
-                                }
-                            )
+                    if (state.posts.isEmpty()) {
+                        Text(
+                            text = "No posts yet. Pull down to refresh.",
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(state.posts, key = { it.id }) { post ->
+                                PostItem(
+                                    post = post,
+                                    onLikeClick = {
+                                        onIntent(FeedIntent.ToggleLike(post.id, post.isLiked))
+                                    }
+                                )
+                            }
                         }
                     }
                 }

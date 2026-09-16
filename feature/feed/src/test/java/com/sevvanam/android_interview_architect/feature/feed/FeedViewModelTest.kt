@@ -12,12 +12,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -55,6 +57,21 @@ class FeedViewModelTest {
             assert(item is FeedUiState.Success)
             assertEquals(posts, (item as FeedUiState.Success).posts)
         }
+    }
+
+    @Test
+    fun `Refresh intent swallows a rethrown sync failure instead of crashing`() = runTest {
+        val posts = listOf(Post("1", "Test Title", "Test Content", "Author", 123456L, false))
+        coEvery { getFeedUseCase() } returns flowOf(Result.Success(posts))
+        // PostRepositoryImpl.refreshFeed() rethrows on failure (so CacheSyncWorker can retry) --
+        // FeedViewModel.refresh() must not let that propagate uncaught out of viewModelScope.
+        coEvery { refreshFeedUseCase() } throws IOException("offline")
+
+        viewModel = FeedViewModel(getFeedUseCase, toggleLikeUseCase, refreshFeedUseCase)
+        viewModel.handleIntent(FeedIntent.Refresh)
+        advanceUntilIdle()
+
+        assert(viewModel.uiState.value is FeedUiState.Success)
     }
 
     @Test
