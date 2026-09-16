@@ -1,0 +1,17 @@
+# Senior / Staff Android Interview Cheat Sheet
+
+This cheat sheet maps common senior and staff architectural interview questions directly to where the implementation lives in this codebase.
+
+| Interview Question | Codebase Reference | Expert Answer / Rationale |
+|---|---|---|
+| **How is UI state handled across configuration changes?** | `FeedViewModel.uiState` (`StateFlow`) | `StateFlow<FeedUiState>` is hot, conflated, and always holds the latest state. It survives configuration changes because the ViewModel survives activity recreation via `ViewModelProvider`. |
+| **How do you handle process death and persistence?** | `CheckoutViewModel` + `SavedStateHandle` | `SavedStateHandle` injects state survival across process death (when Android kills the process in background) without manual `onSaveInstanceState` boilerplate. |
+| **How does offline-first caching work end-to-end?** | `PostRepositoryImpl` (`:core:data`) | Room is established as the Single Source of Truth (SSOT). The repository exposes a reactive `Flow` from Room, fetches remote data in the background, upserts into Room, and the UI observes DB changes reactively. |
+| **Why does the domain layer have zero Android dependencies?** | `:domain` module | Ensures business logic is pure Kotlin, testable in milliseconds on the JVM without robolectric/Android mocks, and decoupled from framework lifecycle changes. |
+| **How is DI scoped in Hilt, and why?** | `DatabaseModule`, `NetworkModule`, ViewModels | `@Singleton` for expensive shared singletons (Room DB, OkHttp/Retrofit). `@ViewModelScoped` for use cases / stateful dependencies bound to ViewModel lifecycle. |
+| **How is type-safe navigation achieved?** | `MainActivity.kt` & feature routes | Kotlin `@Serializable` objects replace legacy string-based route arguments, providing compile-time safety and type-safe argument passing. |
+| **How do you unit test MVI ViewModels and Reducers?** | `FeedViewModelTest.kt` | Use JUnit 5, MockK (`coEvery`), and Turbine (`test { awaitItem() }`) to assert asynchronous `StateFlow` emissions deterministically without Dispatchers main thread locking. |
+| **Why modularize this way (Clean Arch + Multi-module)?** | Project module tree (`:core:*`, `:domain`, `:feature:*`) | Enforces architectural boundaries, prevents feature-to-feature coupling, enables parallel compilation/build speedups, and clarifies team ownership. |
+| **When would you use `SharedFlow` vs `StateFlow`?** | Event vs State channels | `StateFlow` is for UI state (hot, conflated, retains latest value). `SharedFlow` (or `Channel`) is for one-shot UI events (navigation, snackbars, toasts) that should not be replayed on configuration change. |
+| **How do you ensure reliable background tasks?** | `CacheSyncWorker` (`:core:data`) | `WorkManager` guarantees execution even across app restarts, with explicit constraints (`NetworkType.CONNECTED`, `requiresBatteryNotLow`). `@HiltWorker` + `ArchitectApplication`'s `Configuration.Provider`/`HiltWorkerFactory` let the worker receive constructor-injected dependencies. |
+| **How do you unit-test offline-first repository behavior?** | `PostRepositoryImplTest.kt` (`:core:data`) | MockK fakes for `PostDao`/`ApiService`/`UserPreferencesDataSource`; Turbine asserts the Room snapshot is emitted *before* the network call resolves, that a network failure still yields cached `Result.Success` (not `Result.Error`), and that a locally-liked post survives a sync where the network reports it unliked. |
