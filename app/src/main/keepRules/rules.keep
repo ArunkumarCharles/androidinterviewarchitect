@@ -10,3 +10,12 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+
+# Network DTOs are deserialized reflectively-by-name via kotlinx.serialization generated serializers;
+# the library ships its own consumer rules, so only keep our model package's serializer companions.
+-keepclassmembers class com.sevvanam.android_interview_architect.core.model.** {
+    *** Companion;
+}
+-keepclasseswithmembers class com.sevvanam.android_interview_architect.core.model.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}

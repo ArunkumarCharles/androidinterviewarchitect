@@ -1,0 +1,28 @@
+# Overrides on top of detekt's defaults (buildUponDefaultConfig = true).
+style:
+  MagicNumber:
+    active: true
+    ignoreAnnotated: ['Preview']
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+  MaxLineLength:
+    maxLineLength: 140
+  WildcardImport:
+    active: true
+complexity:
+  LongParameterList:
+    functionThreshold: 8
+    constructorThreshold: 8
+    ignoreDefaultParameters: true
+  TooManyFunctions:
+    active: false
+naming:
+  PackageNaming:
+    active: false   # the app's root package (android_interview_architect) uses underscores
+  FunctionNaming:
+    # Composables are PascalCase; test names use backticks.
+    ignoreAnnotated: ['Composable']
+    functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
+exceptions:
+  TooGenericExceptionCaught:
+    active: false   # repositories intentionally translate any failure into Result.Error
