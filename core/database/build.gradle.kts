@@ -13,7 +13,7 @@ android {
     }
     sourceSets {
         // Exported schemas are inputs to migration tests.
-        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+        getByName("androidTest").assets.directories.add("$projectDir/schemas")
     }
 }
 
@@ -40,4 +40,7 @@ dependencies {
 // test JVM to a JDK it supports regardless of which JDK runs Gradle.
 tasks.withType<Test>().configureEach {
     javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(21)) })
+    // Robolectric's newer Android SDK shadows (e.g. ApplicationSharedMemory) reach into JDK internals via
+    // reflection; JDK 17+ blocks that unless the package is exported to the unnamed module.
+    jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
 }

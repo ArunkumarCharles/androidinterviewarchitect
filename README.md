@@ -45,6 +45,6 @@ build-logic              — Included build with convention plugins (architect.a
 
 ## How to Build & Run
 
-1. Clone or open the project in Android Studio (Jellyfish / Koala or newer).
+1. Clone or open the project in an Android Studio release that supports AGP 9.4 (JDK 17+ to run Gradle; the wrapper pins Gradle 9.7.1, and `compileSdk` 37 must be installed).
 2. Sync project with Gradle files.
 3. Build and run on an Android emulator or physical device.

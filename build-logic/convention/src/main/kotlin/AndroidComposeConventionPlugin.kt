@@ -13,7 +13,7 @@ class AndroidComposeConventionPlugin : Plugin<Project> {
         pluginManager.apply("org.jetbrains.kotlin.plugin.compose")
         // Look up by name: AGP registers the concrete type (application/library), not CommonExtension itself,
         // so a by-type lookup of the shared supertype finds nothing.
-        (extensions.getByName("android") as CommonExtension<*, *, *, *, *, *>).buildFeatures.compose = true
+        (extensions.getByName("android") as CommonExtension).buildFeatures.compose = true
         dependencies {
             add("implementation", platform(libs.findLibrary("androidx-compose-bom").get()))
             add("implementation", libs.findBundle("androidx-compose").get())

@@ -69,3 +69,9 @@ Taking the **Feed Feature** as an example:
 - Catalog **bundles** (`androidx-compose`, `androidx-lifecycle-compose`, `unit-test`) keep the usual dependency sets identical everywhere.
 - The plugins use `compileOnly` for AGP/Kotlin/KSP/Hilt: the root build already loads them (`apply false`), and bundling a second copy would risk two versions of the same plugin.
 
+### Toolchain and upgrades
+- **Versions** (all in `gradle/libs.versions.toml`): AGP 9.4, Kotlin 2.4, KSP 2.3, Hilt 2.60, Compose BOM 2026.09, Room 2.8, Navigation 2.10, Paging 3.5, Gradle 9.7. `compileSdk` is 37 but `targetSdk` stays 35: compileSdk only unlocks new APIs and is required by newer AndroidX; targetSdk opts the app into new runtime behaviour and is raised deliberately, after testing.
+- **AGP 9 built-in Kotlin**: AGP compiles Kotlin itself, so the `org.jetbrains.kotlin.android` plugin is no longer applied and the Kotlin JVM target follows `compileOptions` (Java and Kotlin can no longer disagree). Convention plugins use the new non-generic `CommonExtension`.
+- **Why it was one big jump**: Hilt 2.59+ only supports AGP 9, so bumping libraries first on AGP 8 was not possible. Version constraints between AGP, Hilt, KSP, Kotlin and Gradle often force upgrades to move together.
+- **Things the upgrade surfaced** (each a real fix, not a workaround): Kotlin 2.4 rejects an inferred intersection type in a reified `arrayOf` (`DatabaseModule`, now `arrayOf<Any?>`); material icons are no longer pulled in transitively (`material-icons-core` is now explicit); `hiltViewModel` moved to `androidx.hilt.lifecycle.viewmodel.compose`; Robolectric on the newest Android SDK needs `--add-exports java.base/jdk.internal.access=ALL-UNNAMED`.
+

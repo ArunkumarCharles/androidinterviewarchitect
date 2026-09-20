@@ -195,10 +195,10 @@ Interviewers respect self-critique. Know these cold, and the fix you'd make:
 
 **Implemented and demoable:** multi-module Clean Architecture, MVVM + MVI, Room SSOT with migration and
 exported schema, Paging 3 + `RemoteMediator`, WorkManager with Hilt, DataStore, type-safe navigation,
-injected dispatchers, convention plugins + version catalog, detekt + lint + R8 in CI, JVM/Robolectric/Compose
+injected dispatchers, convention plugins + version catalog, a current toolchain (AGP 9, Kotlin 2.4, Gradle 9.7), detekt + lint + R8 in CI, JVM/Robolectric/Compose
 tests.
 
-**Planned, not built yet** (tracked as phases in the working plan): dependency upgrade, pure-Kotlin `:domain`,
+**Planned, not built yet** (tracked as phases in the working plan): pure-Kotlin `:domain`,
 typed errors, `:core:designsystem`, real network/security stack and build flavors, observability
 (logger/analytics/crash/feature flags), Baseline Profile + Macrobenchmark, Hilt test setup + screenshot tests +
 coverage gate, split CI, edge-to-edge/adaptive layouts and deep links, ADRs.

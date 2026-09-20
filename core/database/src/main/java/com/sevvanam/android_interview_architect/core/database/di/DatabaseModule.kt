@@ -35,7 +35,7 @@ object DatabaseModule {
             // Explicit migrations keep user data (likes) across upgrades. Destructive fallback is limited
             // to downgrades, which only happen on dev devices.
             .addMigrations(MIGRATION_1_2)
-            .fallbackToDestructiveMigrationOnDowngrade()
+            .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onCreate(db: SupportSQLiteDatabase) {
                     super.onCreate(db)
@@ -43,7 +43,9 @@ object DatabaseModule {
                     seedPosts.forEach { post ->
                         db.execSQL(
                             "INSERT INTO posts (id, title, content, author, timestamp, isLiked) VALUES (?, ?, ?, ?, ?, 0)",
-                            arrayOf(post.id, post.title, post.content, post.author, post.timestamp)
+                            // Explicit element type: mixing String and Long makes Kotlin infer the intersection
+                            // Comparable & Serializable, which Kotlin 2.4 rejects for reified array types.
+                            arrayOf<Any?>(post.id, post.title, post.content, post.author, post.timestamp)
                         )
                     }
                 }
