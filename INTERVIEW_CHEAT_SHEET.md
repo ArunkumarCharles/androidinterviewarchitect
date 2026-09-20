@@ -1,5 +1,7 @@
 # Senior / Staff Android Interview Cheat Sheet
 
+For the study plan, code tour and system-design drills, see [`INTERVIEW_PREP_GUIDE.md`](INTERVIEW_PREP_GUIDE.md).
+
 This cheat sheet maps common senior and staff architectural interview questions directly to where the implementation lives in this codebase.
 
 | Interview Question | Codebase Reference | Expert Answer / Rationale |

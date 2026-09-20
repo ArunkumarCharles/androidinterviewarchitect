@@ -2,6 +2,8 @@
 
 A reference-quality Android sample application and architecture guide designed for senior/staff-level Android interview preparation. Every architectural decision in this project is deliberate, documented, and explainable in technical interviews.
 
+**Preparing for an interview?** Start with [`INTERVIEW_PREP_GUIDE.md`](INTERVIEW_PREP_GUIDE.md) (study plan, code tour, playbooks, honest weak spots), then drill with [`INTERVIEW_CHEAT_SHEET.md`](INTERVIEW_CHEAT_SHEET.md).
+
 ---
 
 ## Module Map
