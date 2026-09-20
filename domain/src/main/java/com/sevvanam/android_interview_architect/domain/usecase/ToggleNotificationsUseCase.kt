@@ -1,12 +1,14 @@
 package com.sevvanam.android_interview_architect.domain.usecase
 
 import com.sevvanam.android_interview_architect.domain.repository.UserProfileRepository
+import dagger.hilt.android.scopes.ViewModelScoped
 import javax.inject.Inject
 
 /**
  * UseCase persisting the notifications-enabled preference, mirroring UpdateBioUseCase's
  * one-action-per-use-case granularity.
  */
+@ViewModelScoped
 class ToggleNotificationsUseCase @Inject constructor(
     private val repository: UserProfileRepository
 ) {

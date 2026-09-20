@@ -13,6 +13,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -31,7 +32,7 @@ class PostRepositoryImplTest {
     private val apiService: ApiService = mockk()
     private val preferencesDataSource: UserPreferencesDataSource = mockk(relaxUnitFun = true)
 
-    private fun repository() = PostRepositoryImpl(postDao, apiService, preferencesDataSource)
+    private fun repository() = PostRepositoryImpl(postDao, apiService, preferencesDataSource, UnconfinedTestDispatcher())
 
     private fun entity(id: String, isLiked: Boolean) = PostEntity(
         id = id,

@@ -9,7 +9,16 @@ import com.sevvanam.android_interview_architect.core.model.Post
 import com.sevvanam.android_interview_architect.core.model.Result
 import com.sevvanam.android_interview_architect.core.network.ApiService
 import com.sevvanam.android_interview_architect.domain.repository.PostRepository
+import androidx.paging.ExperimentalPagingApi
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
+import com.sevvanam.android_interview_architect.core.data.di.IoDispatcher
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
@@ -18,6 +27,7 @@ import java.time.Instant
 import javax.inject.Inject
 
 private const val TAG = "PostRepositoryImpl"
+private const val PAGE_SIZE = 20
 
 /**
  * Offline-first repository implementation demonstrating Single Source of Truth pattern.
@@ -26,7 +36,8 @@ private const val TAG = "PostRepositoryImpl"
 class PostRepositoryImpl @Inject constructor(
     private val postDao: PostDao,
     private val apiService: ApiService,
-    private val preferencesDataSource: UserPreferencesDataSource
+    private val preferencesDataSource: UserPreferencesDataSource,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : PostRepository {
 
     override fun getFeedStream(): Flow<Result<List<Post>>> = flow {
@@ -50,7 +61,14 @@ class PostRepositoryImpl @Inject constructor(
         emitAll(postDao.getPosts().map { entities -> Result.Success(entities.map { it.toDomain() }) })
     }.catch { throwable ->
         emit(Result.Error(throwable))
-    }
+    }.flowOn(ioDispatcher)
+
+    @OptIn(ExperimentalPagingApi::class)
+    override fun getPagedFeed(): Flow<PagingData<Post>> = Pager(
+        config = PagingConfig(pageSize = PAGE_SIZE, enablePlaceholders = false),
+        remoteMediator = PostRemoteMediator(::syncRemotePosts),
+        pagingSourceFactory = postDao::getPostsPaged
+    ).flow.map { pagingData -> pagingData.map { it.toDomain() } }
 
     override suspend fun refreshFeed() {
         try {
@@ -73,7 +91,7 @@ class PostRepositoryImpl @Inject constructor(
      * like state. insertPosts uses REPLACE, so without this merge step a background sync would
      * silently overwrite a user's like (the network's Post.isLiked always defaults to false).
      */
-    private suspend fun syncRemotePosts() {
+    private suspend fun syncRemotePosts() = withContext(ioDispatcher) {
         val locallyLikedIds = postDao.getPostsSnapshot()
             .filter { it.isLiked }
             .map { it.id }

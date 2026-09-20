@@ -23,10 +23,11 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "keepRules/rules.keep"
+                "src/main/keepRules/rules.keep"
             )
         }
     }
@@ -51,6 +52,7 @@ dependencies {
     implementation(project(":feature:feed"))
     implementation(project(":feature:profile"))
     implementation(project(":feature:checkout"))
+    implementation(project(":feature:topic"))
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)

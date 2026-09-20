@@ -1,5 +1,6 @@
 package com.sevvanam.android_interview_architect.domain.repository
 
+import androidx.paging.PagingData
 import com.sevvanam.android_interview_architect.core.model.Post
 import com.sevvanam.android_interview_architect.core.model.Result
 import kotlinx.coroutines.flow.Flow
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
  */
 interface PostRepository {
     fun getFeedStream(): Flow<Result<List<Post>>>
+    fun getPagedFeed(): Flow<PagingData<Post>>
     suspend fun refreshFeed()
     suspend fun toggleLike(postId: String, isLiked: Boolean)
 }

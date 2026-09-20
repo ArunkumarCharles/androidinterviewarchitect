@@ -23,18 +23,27 @@ class UserProfileRepositoryImpl @Inject constructor(
     }
 
     override fun observeProfile(): Flow<UserProfile> =
-        combine(preferencesDataSource.bio, preferencesDataSource.notificationsEnabled) { bio, notificationsEnabled ->
+        combine(
+            preferencesDataSource.bio,
+            preferencesDataSource.notificationsEnabled,
+            preferencesDataSource.themeMode
+        ) { bio, notificationsEnabled, themeMode ->
             UserProfile(
                 userId = STATIC_USER_ID,
                 username = STATIC_USERNAME,
                 email = STATIC_EMAIL,
                 bio = bio,
-                notificationsEnabled = notificationsEnabled
+                notificationsEnabled = notificationsEnabled,
+                themeMode = themeMode
             )
         }
 
     override suspend fun updateBio(bio: String) {
         preferencesDataSource.setBio(bio)
+    }
+
+    override suspend fun setThemeMode(mode: String) {
+        preferencesDataSource.setThemeMode(mode)
     }
 
     override suspend fun setNotificationsEnabled(enabled: Boolean) {

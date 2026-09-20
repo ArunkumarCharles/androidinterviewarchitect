@@ -16,4 +16,7 @@ sealed interface AppRoute {
 
     @Serializable
     data object Checkout : AppRoute
+
+    @Serializable
+    data object Topic : AppRoute
 }

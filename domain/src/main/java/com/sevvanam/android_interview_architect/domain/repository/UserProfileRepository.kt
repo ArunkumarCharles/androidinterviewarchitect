@@ -10,4 +10,5 @@ interface UserProfileRepository {
     fun observeProfile(): Flow<UserProfile>
     suspend fun updateBio(bio: String)
     suspend fun setNotificationsEnabled(enabled: Boolean)
+    suspend fun setThemeMode(mode: String)
 }

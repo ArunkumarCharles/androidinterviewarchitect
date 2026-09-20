@@ -3,10 +3,14 @@ package com.sevvanam.android_interview_architect
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Icon
@@ -26,16 +30,25 @@ import androidx.navigation.compose.rememberNavController
 import com.sevvanam.android_interview_architect.feature.checkout.CheckoutRoute
 import com.sevvanam.android_interview_architect.feature.feed.FeedRoute
 import com.sevvanam.android_interview_architect.feature.profile.ProfileRoute
+import com.sevvanam.android_interview_architect.feature.topic.TopicRoute
 import com.sevvanam.android_interview_architect.navigation.AppRoute
 import com.sevvanam.android_interview_architect.ui.theme.AndroidinterviewarchitectTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private val mainViewModel: MainViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            AndroidinterviewarchitectTheme {
+            val themeMode by mainViewModel.themeMode.collectAsStateWithLifecycle()
+            val darkTheme = when (themeMode) {
+                "dark" -> true
+                "light" -> false
+                else -> isSystemInDarkTheme()
+            }
+            AndroidinterviewarchitectTheme(darkTheme = darkTheme) {
                 MainAppContent()
             }
         }
@@ -76,9 +89,15 @@ fun MainAppContent() {
                 )
                 NavigationBarItem(
                     icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Checkout") },
-                    label = { Text("Checkout (MVI)") },
+                    label = { Text("Checkout") },
                     selected = currentDestination?.hasRoute<AppRoute.Checkout>() == true,
                     onClick = { navigateTo(AppRoute.Checkout) }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Info, contentDescription = "Topics") },
+                    label = { Text("Topics") },
+                    selected = currentDestination?.hasRoute<AppRoute.Topic>() == true,
+                    onClick = { navigateTo(AppRoute.Topic) }
                 )
             }
         }
@@ -91,6 +110,7 @@ fun MainAppContent() {
             composable<AppRoute.Feed> { FeedRoute() }
             composable<AppRoute.Profile> { ProfileRoute() }
             composable<AppRoute.Checkout> { CheckoutRoute() }
+            composable<AppRoute.Topic> { TopicRoute() }
         }
     }
 }

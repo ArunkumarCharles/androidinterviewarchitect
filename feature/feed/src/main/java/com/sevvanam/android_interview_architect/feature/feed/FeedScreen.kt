@@ -1,5 +1,18 @@
 package com.sevvanam.android_interview_architect.feature.feed
 
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,10 +48,23 @@ fun FeedRoute(
     viewModel: FeedViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val pagedPosts = viewModel.pagedPosts.collectAsLazyPagingItems()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            when (event) {
+                FeedEvent.RefreshFailed ->
+                    snackbarHostState.showSnackbar("Couldn't refresh. Showing saved posts.")
+            }
+        }
+    }
 
     FeedContent(
         uiState = uiState,
-        onIntent = { intent -> viewModel.handleIntent(intent) }
+        onIntent = { intent -> viewModel.handleIntent(intent) },
+        snackbarHostState = snackbarHostState,
+        pagedPosts = pagedPosts
     )
 }
 
@@ -46,9 +72,27 @@ fun FeedRoute(
 @Composable
 fun FeedContent(
     uiState: FeedUiState,
-    onIntent: (FeedIntent) -> Unit
+    onIntent: (FeedIntent) -> Unit,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    // When provided, the list is rendered from Paging (Room-backed, loaded in pages). Loading/Error
+    // still come from uiState. Null keeps the simple list path, which previews and UI tests use.
+    pagedPosts: LazyPagingItems<Post>? = null
 ) {
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    // derivedStateOf: firstVisibleItemIndex changes on every scroll frame, but this Boolean only flips
+    // when the threshold is crossed, so only the FAB visibility (not the whole screen) recomposes.
+    val showScrollToTop by remember { derivedStateOf { listState.firstVisibleItemIndex > 2 } }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            if (showScrollToTop) {
+                SmallFloatingActionButton(onClick = { scope.launch { listState.animateScrollToItem(0) } }) {
+                    Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Scroll to top")
+                }
+            }
+        },
         topBar = {
             TopAppBar(
                 title = { Text("Interview Architect Feed (MVI)") },
@@ -66,20 +110,34 @@ fun FeedContent(
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
                 is FeedUiState.Success -> {
-                    if (state.posts.isEmpty()) {
+                    val isEmpty = if (pagedPosts != null) pagedPosts.itemCount == 0 else state.posts.isEmpty()
+                    if (isEmpty) {
                         Text(
-                            text = "No posts yet. Pull down to refresh.",
+                            text = "No posts yet. Tap refresh to sync.",
                             modifier = Modifier.align(Alignment.Center)
                         )
                     } else {
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            items(state.posts, key = { it.id }) { post ->
-                                PostItem(
-                                    post = post,
-                                    onLikeClick = {
-                                        onIntent(FeedIntent.ToggleLike(post.id, post.isLiked))
+                        LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                            if (pagedPosts != null) {
+                                items(
+                                    count = pagedPosts.itemCount,
+                                    key = pagedPosts.itemKey { it.id }
+                                ) { index ->
+                                    // null only while placeholders are enabled; we disable them in the Pager.
+                                    pagedPosts[index]?.let { post ->
+                                        PostItem(
+                                            post = post,
+                                            onLikeClick = { onIntent(FeedIntent.ToggleLike(post.id, post.isLiked)) }
+                                        )
                                     }
-                                )
+                                }
+                            } else {
+                                items(state.posts, key = { it.id }) { post ->
+                                    PostItem(
+                                        post = post,
+                                        onLikeClick = { onIntent(FeedIntent.ToggleLike(post.id, post.isLiked)) }
+                                    )
+                                }
                             }
                         }
                     }

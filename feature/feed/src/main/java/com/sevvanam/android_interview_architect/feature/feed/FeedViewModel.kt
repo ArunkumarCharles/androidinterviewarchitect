@@ -8,7 +8,13 @@ import com.sevvanam.android_interview_architect.domain.usecase.GetFeedUseCase
 import com.sevvanam.android_interview_architect.domain.usecase.RefreshFeedUseCase
 import com.sevvanam.android_interview_architect.domain.usecase.ToggleLikeUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import com.sevvanam.android_interview_architect.domain.usecase.GetPagedFeedUseCase
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -32,12 +38,25 @@ sealed interface FeedIntent {
     data class ToggleLike(val postId: String, val currentStatus: Boolean) : FeedIntent
 }
 
+/** One-shot effects, consumed exactly once (a Channel, not state, so rotation doesn't replay them). */
+sealed interface FeedEvent {
+    object RefreshFailed : FeedEvent
+}
+
 @HiltViewModel
 class FeedViewModel @Inject constructor(
     private val getFeedUseCase: GetFeedUseCase,
     private val toggleLikeUseCase: ToggleLikeUseCase,
-    private val refreshFeedUseCase: RefreshFeedUseCase
+    private val refreshFeedUseCase: RefreshFeedUseCase,
+    private val getPagedFeedUseCase: GetPagedFeedUseCase
 ) : ViewModel() {
+
+    private val _events = Channel<FeedEvent>(Channel.BUFFERED)
+    val events: Flow<FeedEvent> = _events.receiveAsFlow()
+
+    // cachedIn keeps loaded pages across configuration changes and lets multiple collectors share one
+    // upstream. Lazy so nothing is loaded until the screen actually collects it.
+    val pagedPosts: Flow<PagingData<Post>> by lazy { getPagedFeedUseCase().cachedIn(viewModelScope) }
 
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
     val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
@@ -77,7 +96,9 @@ class FeedViewModel @Inject constructor(
             try {
                 refreshFeedUseCase()
             } catch (e: Exception) {
-                // Cached data is still showing via loadFeed()'s ongoing collection; nothing to do.
+                // Cached data is still showing via loadFeed()'s ongoing collection, so this is a
+                // transient message rather than an error state.
+                _events.send(FeedEvent.RefreshFailed)
             }
         }
     }

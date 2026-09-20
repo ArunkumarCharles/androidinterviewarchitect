@@ -1,5 +1,6 @@
 package com.sevvanam.android_interview_architect.feature.profile
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -70,6 +72,17 @@ fun ProfileRoute(
                     checked = currentProfile.notificationsEnabled,
                     onCheckedChange = { viewModel.toggleNotifications(it) }
                 )
+            }
+
+            Text(text = "Theme", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+                listOf("system" to "System", "light" to "Light", "dark" to "Dark").forEach { (mode, label) ->
+                    FilterChip(
+                        selected = currentProfile.themeMode == mode,
+                        onClick = { viewModel.setThemeMode(mode) },
+                        label = { Text(label) }
+                    )
+                }
             }
         }
     }

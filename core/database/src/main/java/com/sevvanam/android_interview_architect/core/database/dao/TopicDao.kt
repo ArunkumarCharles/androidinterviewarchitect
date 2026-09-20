@@ -1,9 +1,8 @@
 package com.sevvanam.android_interview_architect.core.database.dao
 
 import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Upsert
 import com.sevvanam.android_interview_architect.core.database.entity.TopicEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -12,7 +11,9 @@ interface TopicDao {
     @Query("SELECT * FROM topics")
     fun getTopics(): Flow<List<TopicEntity>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    // Upsert (UPDATE in place), not REPLACE: REPLACE deletes the row first, which would cascade-delete
+    // the topic's questions via the foreign key.
+    @Upsert
     suspend fun insertTopics(topics: List<TopicEntity>)
 
     @Query("DELETE FROM topics")

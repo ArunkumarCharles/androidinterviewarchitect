@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sevvanam.android_interview_architect.core.model.UserProfile
 import com.sevvanam.android_interview_architect.domain.usecase.GetUserProfileUseCase
+import com.sevvanam.android_interview_architect.domain.usecase.SetThemeModeUseCase
 import com.sevvanam.android_interview_architect.domain.usecase.ToggleNotificationsUseCase
 import com.sevvanam.android_interview_architect.domain.usecase.UpdateBioUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,7 +23,8 @@ import javax.inject.Inject
 class ProfileViewModel @Inject constructor(
     getUserProfileUseCase: GetUserProfileUseCase,
     private val updateBioUseCase: UpdateBioUseCase,
-    private val toggleNotificationsUseCase: ToggleNotificationsUseCase
+    private val toggleNotificationsUseCase: ToggleNotificationsUseCase,
+    private val setThemeModeUseCase: SetThemeModeUseCase
 ) : ViewModel() {
 
     val userProfile: StateFlow<UserProfile?> = getUserProfileUseCase()
@@ -31,6 +33,12 @@ class ProfileViewModel @Inject constructor(
     fun updateBio(newBio: String) {
         viewModelScope.launch {
             updateBioUseCase(newBio)
+        }
+    }
+
+    fun setThemeMode(mode: String) {
+        viewModelScope.launch {
+            setThemeModeUseCase(mode)
         }
     }
 
