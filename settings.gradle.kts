@@ -1,4 +1,6 @@
 pluginManagement {
+    // Convention plugins (architect.android.*) come from this included build.
+    includeBuild("build-logic")
     repositories {
         google {
             content {

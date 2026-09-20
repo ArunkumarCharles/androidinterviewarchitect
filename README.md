@@ -18,6 +18,7 @@ A reference-quality Android sample application and architecture guide designed f
 :feature:checkout        — MVI feature module (multi-step checkout state machine)
 :feature:profile         — MVVM feature module (standard CRUD-ish profile screen)
 :feature:topic           — MVVM feature module (interview topics with expandable Q&A, seeded offline)
+build-logic              — Included build with convention plugins (architect.android.application / library / hilt / compose / feature)
 ```
 
 ---

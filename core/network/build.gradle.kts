@@ -1,25 +1,11 @@
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
+    id("architect.android.library")
+    id("architect.android.hilt")
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.dagger.hilt)
-    alias(libs.plugins.ksp)
 }
 
 android {
     namespace = "com.sevvanam.android_interview_architect.core.network"
-    compileSdk = 35
-
-    defaultConfig {
-        minSdk = 26
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
 }
 
 dependencies {
@@ -28,6 +14,4 @@ dependencies {
     implementation(libs.retrofit.serialization)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
 }

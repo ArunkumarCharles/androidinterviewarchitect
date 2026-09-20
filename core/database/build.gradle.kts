@@ -1,24 +1,10 @@
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.dagger.hilt)
+    id("architect.android.library")
+    id("architect.android.hilt")
 }
 
 android {
     namespace = "com.sevvanam.android_interview_architect.core.database"
-    compileSdk = 35
-
-    defaultConfig {
-        minSdk = 26
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
@@ -42,8 +28,6 @@ dependencies {
     implementation(libs.room.paging)
     api(libs.paging.common)
     ksp(libs.room.compiler)
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

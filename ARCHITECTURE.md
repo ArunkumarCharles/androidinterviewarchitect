@@ -61,3 +61,11 @@ Taking the **Feed Feature** as an example:
 - **Robolectric** (in-memory Room, WorkManager): `DaoTest`, `AppDatabaseMigrationTest`, `CacheSyncWorkerTest`. These pin the test JVM to JDK 21 because Robolectric's bundled ASM cannot read JDK 25 class files.
 - **Compose UI tests** (`androidTest`): `FeedScreenTest`, `TopicScreenTest`.
 - **Not covered**: `UserPreferencesDataSource` (thin DataStore wrapper, only exercised through `UserProfileRepositoryImplTest` with a mock), the Profile and Checkout screens' Compose UI, and `SeedData` contents.
+
+### Build logic (convention plugins)
+- `build-logic/convention` is an *included build* (`pluginManagement { includeBuild("build-logic") }`). It defines `architect.android.application`, `.library`, `.hilt`, `.compose` and `.feature`, so a module's build file is only its namespace and its real dependencies.
+- **Single source of truth**: compileSdk/minSdk/targetSdk live in `gradle/libs.versions.toml`; the JVM target and Hilt+KSP wiring live in the plugins. Before this, the same ~25 lines were copy-pasted into 11 files and could drift.
+- `architect.android.feature` also encodes the dependency rule: a feature gets `:domain` and `:core:model` and nothing else, so it cannot pick up `:core:data` or another feature by copy-paste.
+- Catalog **bundles** (`androidx-compose`, `androidx-lifecycle-compose`, `unit-test`) keep the usual dependency sets identical everywhere.
+- The plugins use `compileOnly` for AGP/Kotlin/KSP/Hilt: the root build already loads them (`apply false`), and bundling a second copy would risk two versions of the same plugin.
+
