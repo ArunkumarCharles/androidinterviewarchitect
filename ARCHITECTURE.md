@@ -26,9 +26,9 @@ Taking the **Feed Feature** as an example:
    - A background sync failure (e.g. offline) is logged and tolerated here — the UI keeps showing cached data instead of surfacing an error.
    - The repository then stays subscribed to Room's reactive `Flow`, so any further local write (a like toggle, or a later successful `CacheSyncWorker` run) keeps pushing fresh state to the UI.
 4. **`FeedViewModel`** reduces emitted results into `FeedUiState` (`Loading`, `Success`, `Error`).
-5. **`FeedRoute` / `FeedContent`** renders state reactively via `collectAsStateWithLifecycle()`.
+5. **`FeedRoute` / `FeedContent`** renders state reactively via `collectAsStateWithLifecycle()`. The list itself comes from `FeedViewModel.pagedPosts` (`GetPagedFeedUseCase`, see *Paging* below) while `FeedUiState` still drives loading, the empty state and refresh errors. `FeedContent` falls back to `FeedUiState.Success.posts` when no paged items are passed, which previews and UI tests use.
 
-`:feature:checkout` and `:feature:profile` follow the same `domain` repository/use-case pattern as Feed (`CheckoutRepository`/`SubmitOrderUseCase` and `UserProfileRepository`/`GetUserProfileUseCase`+`UpdateBioUseCase`+`ToggleNotificationsUseCase` respectively), rather than calling data sources directly from their ViewModels.
+`:feature:checkout` and `:feature:profile` follow the same `domain` repository/use-case pattern as Feed (`CheckoutRepository`/`SubmitOrderUseCase` and `UserProfileRepository`/`GetUserProfileUseCase`+`UpdateBioUseCase`+`ToggleNotificationsUseCase`+`SetThemeModeUseCase` respectively), rather than calling data sources directly from their ViewModels.
 
 ---
 
@@ -46,12 +46,18 @@ Taking the **Feed Feature** as an example:
 
 - **Dependency Injection**: `@Singleton` scope for database, Retrofit API, and DataStore; `@ViewModelScoped` for use cases holding per-screen transient state.
 - **Background Sync**: `CacheSyncWorker` (WorkManager, `@HiltWorker`) runs periodic background syncs constrained by network connectivity and unconstrained battery levels (`NetworkType.CONNECTED`, `requiresBatteryNotLow = true`). `ArchitectApplication` implements `Configuration.Provider` with an injected `HiltWorkerFactory` so Hilt can construct the worker, and enqueues the periodic request (`ExistingPeriodicWorkPolicy.KEEP`) on app startup.
-- **DataStore**: Type-safe Preferences DataStore manages theme mode, last sync timestamp, and (via `UserProfileRepositoryImpl`) the user's bio and notification preference asynchronously.
-- **Navigation**: Compose Navigation uses type-safe `@Serializable` route objects (`AppRoute.Feed`/`Profile`/`Checkout` in `:app`) rather than string routes, giving compile-time-checked navigation calls.
-- **Topics & Q&A content**: `:feature:topic` renders `topics` and `questions` (FK `questions.topicId` -> `topics.id`, `CASCADE`) straight from Room. There is no backend, so `DatabaseModule`'s `RoomDatabase.Callback.onCreate` seeds posts, topics and questions from `SeedData.kt`. `TopicDao` uses `@Upsert` rather than `REPLACE` because REPLACE deletes the parent row first and would cascade-delete its questions. The database uses `fallbackToDestructiveMigration()` because all its data is rebuildable seed content; a production app must ship explicit `Migration` objects.
+- **DataStore**: Type-safe Preferences DataStore manages theme mode, last sync timestamp, and (via `UserProfileRepositoryImpl`) the user's bio and notification preference asynchronously. `MainViewModel` in `:app` reads the theme through `GetUserProfileUseCase` and starts as `"system"` until DataStore emits, so the first frame follows the OS setting instead of flashing.
+- **Navigation**: Compose Navigation uses type-safe `@Serializable` route objects (`AppRoute.Feed`/`Profile`/`Checkout`/`Topic` in `:app`) rather than string routes, giving compile-time-checked navigation calls.
+- **Topics & Q&A content**: `:feature:topic` renders `topics` and `questions` (FK `questions.topicId` -> `topics.id`, `CASCADE`) straight from Room. There is no backend, so `DatabaseModule`'s `RoomDatabase.Callback.onCreate` seeds posts, topics and questions from `SeedData.kt`. `TopicDao` uses `@Upsert` rather than `REPLACE` because REPLACE deletes the parent row first and would cascade-delete its questions. Schema changes ship as explicit `Migration` objects (see *Migrations* below), never a destructive fallback on upgrade.
 
 ### Paging, migrations and dispatchers
 - **Paging**: `PostRepositoryImpl.getPagedFeed()` builds a `Pager` over `PostDao.getPostsPaged()` (Room-generated `PagingSource`). `PostRemoteMediator` refreshes Room from the network; the UI never reads the network directly. The API returns the whole list, so only `REFRESH` does work; a paged backend would add per-row next-page keys.
 - **Migrations**: `AppDatabase` exports its schema (`core/database/schemas`) and ships `MIGRATION_1_2` instead of destructive fallback, so likes survive upgrades. Destructive fallback is kept for downgrades only.
 - **Dispatchers**: `DispatchersModule` provides `@IoDispatcher` / `@DefaultDispatcher`; repositories use `flowOn` / `withContext` with the injected dispatcher.
 - **One-shot events**: `TopicViewModel` and `FeedViewModel` expose a `Channel`-backed `events` flow for snackbars.
+
+### Testing
+- **JVM unit tests** (JUnit 4, MockK, Turbine, `kotlinx-coroutines-test`): ViewModels (`FeedViewModelTest`, `ProfileViewModelTest`, `CheckoutViewModelTest`, `TopicViewModelTest`, `MainViewModelTest`), every use case (`UseCaseTest`), repositories (`PostRepositoryImplTest`, `TopicRepositoryImplTest`, `QuestionRepositoryImplTest`, `UserProfileRepositoryImplTest`, `CheckoutRepositoryImplTest`), `PostRemoteMediatorTest`, and the entity/domain mappers (`MappersTest`).
+- **Robolectric** (in-memory Room, WorkManager): `DaoTest`, `AppDatabaseMigrationTest`, `CacheSyncWorkerTest`. These pin the test JVM to JDK 21 because Robolectric's bundled ASM cannot read JDK 25 class files.
+- **Compose UI tests** (`androidTest`): `FeedScreenTest`, `TopicScreenTest`.
+- **Not covered**: `UserPreferencesDataSource` (thin DataStore wrapper, only exercised through `UserProfileRepositoryImplTest` with a mock), the Profile and Checkout screens' Compose UI, and `SeedData` contents.

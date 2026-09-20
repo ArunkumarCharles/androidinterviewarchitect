@@ -34,9 +34,9 @@ A reference-quality Android sample application and architecture guide designed f
 - **Room migrations**: schema export + explicit `MIGRATION_1_2` (keeps user likes) with a Robolectric migration test.
 - **Injected dispatchers**: `@IoDispatcher` / `@DefaultDispatcher` so repositories are deterministic under test.
 - **Release hardening**: R8 minify + resource shrinking enabled for release.
-- **Testing**: JUnit 4, MockK, Turbine for Flow assertions, Robolectric (in-memory Room, WorkManager), and Compose UI tests.
+- **Testing**: JUnit 4, MockK, Turbine for Flow assertions, Robolectric (in-memory Room, WorkManager), and Compose UI tests. Run the JVM suite with `./gradlew testDebugUnitTest`; see the *Testing* section of `ARCHITECTURE.md` for what each layer covers.
 - **CI / quality**: GitHub Actions runs detekt, lint, unit tests and debug + release builds (`.github/workflows/ci.yml`).
-  Robolectric tests pin the test JVM to JDK 21 (its bundled ASM cannot read JDK 25 class files).
+  The Gradle daemon is pinned to JDK 21 (`gradle/gradle-daemon-jvm.properties`) because AGP lint's embedded Kotlin compiler fails on JDK 25, and Robolectric tests pin their test JVM to JDK 21 (its bundled ASM cannot read JDK 25 class files).
 
 ---
 
