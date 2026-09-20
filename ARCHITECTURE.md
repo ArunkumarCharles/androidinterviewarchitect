@@ -3,9 +3,9 @@
 ## 1. System Overview & Clean Architecture
 
 The project enforces strict dependency inversion:
-- **`:domain`**: Contains pure Kotlin business logic (use cases, repository interfaces). It has **zero Android or framework dependencies**, ensuring maximum testability and platform independence.
+- **`:domain`**: Contains business logic (use cases, repository interfaces). It uses **no Android APIs**, so its tests run on the plain JVM. It is still an Android library module only so use cases can be `@ViewModelScoped`; converting it to `kotlin("jvm")` would make the isolation compiler-enforced at the cost of that annotation.
 - **`:data` / `:database` / `:network` / `:datastore`**: Implement domain repository interfaces and data sources.
-- **`:feature:*`**: Presentation layer modules depending on `:domain` and `:core:ui`.
+- **`:feature:*`**: Presentation layer modules depending on `:domain` and `:core:model` (shared UI components currently live in each feature module; a `:core:ui` module is a natural next step).
 - **`:app`**: Composition root responsible for dependency injection wiring and navigation graph assembly.
 
 ```
@@ -48,3 +48,10 @@ Taking the **Feed Feature** as an example:
 - **Background Sync**: `CacheSyncWorker` (WorkManager, `@HiltWorker`) runs periodic background syncs constrained by network connectivity and unconstrained battery levels (`NetworkType.CONNECTED`, `requiresBatteryNotLow = true`). `ArchitectApplication` implements `Configuration.Provider` with an injected `HiltWorkerFactory` so Hilt can construct the worker, and enqueues the periodic request (`ExistingPeriodicWorkPolicy.KEEP`) on app startup.
 - **DataStore**: Type-safe Preferences DataStore manages theme mode, last sync timestamp, and (via `UserProfileRepositoryImpl`) the user's bio and notification preference asynchronously.
 - **Navigation**: Compose Navigation uses type-safe `@Serializable` route objects (`AppRoute.Feed`/`Profile`/`Checkout` in `:app`) rather than string routes, giving compile-time-checked navigation calls.
+- **Topics & Q&A content**: `:feature:topic` renders `topics` and `questions` (FK `questions.topicId` -> `topics.id`, `CASCADE`) straight from Room. There is no backend, so `DatabaseModule`'s `RoomDatabase.Callback.onCreate` seeds posts, topics and questions from `SeedData.kt`. `TopicDao` uses `@Upsert` rather than `REPLACE` because REPLACE deletes the parent row first and would cascade-delete its questions. The database uses `fallbackToDestructiveMigration()` because all its data is rebuildable seed content; a production app must ship explicit `Migration` objects.
+
+### Paging, migrations and dispatchers
+- **Paging**: `PostRepositoryImpl.getPagedFeed()` builds a `Pager` over `PostDao.getPostsPaged()` (Room-generated `PagingSource`). `PostRemoteMediator` refreshes Room from the network; the UI never reads the network directly. The API returns the whole list, so only `REFRESH` does work; a paged backend would add per-row next-page keys.
+- **Migrations**: `AppDatabase` exports its schema (`core/database/schemas`) and ships `MIGRATION_1_2` instead of destructive fallback, so likes survive upgrades. Destructive fallback is kept for downgrades only.
+- **Dispatchers**: `DispatchersModule` provides `@IoDispatcher` / `@DefaultDispatcher`; repositories use `flowOn` / `withContext` with the injected dispatcher.
+- **One-shot events**: `TopicViewModel` and `FeedViewModel` expose a `Channel`-backed `events` flow for snackbars.
