@@ -36,6 +36,8 @@ android {
 
         buildConfigField("String", "FIRST_SEC", "\"${getSecret("FIRST_SEC")}\"")
         buildConfigField("String", "SECOND_KEY", "\"${getSecret("SECOND_KEY")}\"")
+        println("xyz key 1: ${getSecret("FIRST_SEC")}")
+        println("xyz key 2: ${getSecret("SECOND_KEY")}")
     }
 
     buildTypes {
