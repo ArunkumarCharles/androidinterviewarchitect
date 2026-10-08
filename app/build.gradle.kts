@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("architect.android.application")
     id("architect.android.hilt")
@@ -5,8 +7,25 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
+}
+
+fun getSecret(key: String): String {
+    return localProperties.getProperty(key)
+        ?: providers.gradleProperty(key).orNull
+        ?: providers.environmentVariable(key).orNull
+        ?: ""
+}
+
 android {
     namespace = "com.sevvanam.android_interview_architect"
+
+    buildFeatures {
+        buildConfig = true
+    }
 
     defaultConfig {
         applicationId = "com.sevvanam.android_interview_architect"
@@ -14,6 +33,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "FIRST_SEC", "\"${getSecret("FIRST_SEC")}\"")
+        buildConfigField("String", "SECOND_KEY", "\"${getSecret("SECOND_KEY")}\"")
     }
 
     buildTypes {
