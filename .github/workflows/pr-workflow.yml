@@ -21,6 +21,10 @@ jobs:
     name: PR Validation & Build
     runs-on: ubuntu-latest
 
+    env:
+      FIRST_SEC: ${{ secrets.FIRST_SEC }}
+      SECOND_KEY: ${{ secrets.SECOND_KEY }}
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
